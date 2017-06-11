@@ -10,6 +10,7 @@ module Data.Vector.Indexed
     , fromVector
     , singleton
     , accum
+    , accum'
     , replicate
     , indexes
     , generate, generateM
@@ -162,9 +163,20 @@ fromVector (l,u) v
 
 -- | /O(n)/. Accumulate elements from a list into a 'Vector'.
 accum :: (Ix i, VG.Vector v a) => (a -> b -> a) -> Vector v i a -> [(i, b)] -> Vector v i a
-accum f (Vector l u v) = Vector l u . VG.accum f v . fmap (first $ index b)
+accum f (Vector l u v) = Vector l u . VG.accum f v . fmap (first $ Ix.index b)
   where b = (l, u)
 {-# INLINEABLE accum #-}
+
+-- | /O(n)/. Accumulate elements from a list into a 'Vector' initialized to the given value.
+accum' :: (Ix i, VG.Vector v a) => (i, i) -> (a -> b -> a) -> a -> [(i, b)] -> Vector v i a
+accum' (l,u) f x0 ys = Vector l u $ VG.create $ do
+    v <- VGM.replicate len x0
+    VGM.accum f v (B.fromList $ fmap (first $ Ix.index b) ys)
+    return v
+  where
+    len = rangeSize b
+    b = (l, u)
+{-# INLINEABLE accum' #-}
 
 -- | /O(n)/. Generate a 'Vector' from a set of bounds and a list of elements.
 -- Expects the list to be of length @'rangeSize' bounds@. Fails with error
