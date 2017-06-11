@@ -1,0 +1,23 @@
+name:                indexed-vector
+version:             0.1.0.0
+synopsis:            Vectors keyed by arbitrary key types.
+-- description:         
+homepage:            http://github.com/bgamari/indexed-vector
+license:             BSD3
+license-file:        LICENSE
+author:              Ben Gamari
+maintainer:          ben@smart-cactus.org
+copyright:           (c) 2017 Ben Gamari
+category:            Data
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+library
+  exposed-modules:     Data.Vector.Indexed
+  other-extensions:    FlexibleContexts, DeriveTraversable, DeriveFoldable
+  build-depends:       base >=4.9 && <4.10,
+                       primitive >=0.6 && <0.7,
+                       vector >=0.12 && <0.13
+  hs-source-dirs:      src
+  default-language:    Haskell2010
