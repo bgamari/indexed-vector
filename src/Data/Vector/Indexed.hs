@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
@@ -79,7 +80,7 @@ indexStream = B.fromList . range . bounds
 -- | /O(n)/. Index into a 'Vector'. Fails if the index doesn't fall within the
 -- 'bounds' of the vector.
 (!) :: (VG.Vector v a, Ix i) => Vector v i a -> i -> a
-v ! i = vector v VG.! Ix.index (bounds v) i
+(!) v i = vector v VG.! Ix.index (bounds v) i
 {-# INLINE (!) #-}
 
 -- | /O(n)/. Index into a 'Vector'.
