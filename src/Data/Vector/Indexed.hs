@@ -47,6 +47,7 @@ module Data.Vector.Indexed
 
 import Control.Monad.Primitive
 import Data.Bifunctor
+import qualified Data.Foldable as Foldable
 import Data.Ix as Ix
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
@@ -168,14 +169,19 @@ accum f (Vector l u v) = Vector l u . VG.accum f v . fmap (first $ Ix.index b)
 {-# INLINEABLE accum #-}
 
 -- | /O(n)/. Accumulate elements from a list into a 'Vector' initialized to the given value.
-accum' :: (Ix i, VG.Vector v a) => (i, i) -> (a -> b -> a) -> a -> [(i, b)] -> Vector v i a
-accum' (l,u) f x0 ys = Vector l u $ VG.create $ do
-    v <- VGM.replicate len x0
-    VGM.accum f v (B.fromList $ fmap (first $ Ix.index b) ys)
+accum' :: (Ix i, VG.Vector v a)
+       => (i, i) -> (a -> b -> a) -> a -> [(i, b)] -> Vector v i a
+accum' b@(l,u) f x0 xs = Vector l u $ VG.create $ do
+    v <- VGM.replicate n x0
+    Foldable.mapM_ (upd v) xs
     return v
   where
-    len = rangeSize b
-    b = (l, u)
+    upd v (i,b) = do
+        let !i' = Ix.index (l,u) i
+        a <- VGM.read v i'
+        VGM.unsafeWrite v i' $! f a b
+
+    !n = rangeSize (l,u)
 {-# INLINEABLE accum' #-}
 
 -- | /O(n)/. Generate a 'Vector' from a set of bounds and a list of elements.
