@@ -236,12 +236,12 @@ elems = VG.toList . vector
 quadrance :: (RealFrac a, VG.Vector v a) => Vector v i a -> a
 quadrance = sum . map squared
   where squared x = x*x
-{-# INLINEABLE quadrance #-}
+{-# INLINE quadrance #-}
 
 -- | /O(n)/. Compute the \(L^2\) norm, \( \sqrt (\sum_i i^2) \).
 norm :: (RealFloat a, VG.Vector v a) => Vector v i a -> a
 norm = sqrt . quadrance
-{-# INLINEABLE norm #-}
+{-# INLINE norm #-}
 
 sameBounds :: Eq i => [(i,i)] -> Maybe (i,i)
 sameBounds (x:xs)
@@ -258,13 +258,13 @@ zipManyWith f [] = error "zipManyWith: empty list"
 zipManyWith f (v0:vs) = Vector l u $ VG.create $ do
     accum <- VG.thaw $ vector v0
     let g i y = do
-            x0 <- VGM.read accum i
-            VGM.write accum i (f x0 y)
+            x0 <- VGM.unsafeRead accum i
+            VGM.unsafeWrite accum i (f x0 y)
     Foldable.mapM_ (\(Vector _ _ v) -> VG.imapM_ g v) vs
     return accum
   where
     Just (l,u) = sameBounds $ fmap bounds (v0:vs)
-{-# INLINEABLE zipManyWith #-}
+{-# INLINE zipManyWith #-}
 
 -- | Zip together two 'Vector's with a function.
 zipWith :: (Eq i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
@@ -275,7 +275,7 @@ zipWith f v1 v2 =
     Vector l u $ VG.zipWith f (vector v1) (vector v2)
   where
     Just (l,u) = sameBounds [bounds v1, bounds v2]
-{-# INLINEABLE zipWith #-}
+{-# INLINE zipWith #-}
 
 -- | Zip together two 'Vector's with a function and indexes.
 izipWith :: (Ix i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
@@ -286,10 +286,10 @@ izipWith f v1 v2 =
     Vector l u $ VG.unstream $ B.zipWith3 f (indexStream v1) (VG.stream $ vector v1) (VG.stream $ vector v2)
   where
     Just (l,u) = sameBounds [bounds v1, bounds v2]
-{-# INLINEABLE izipWith #-}
+{-# INLINE izipWith #-}
 
 -- | Convert between vector types.
 convert :: (VG.Vector v a, VG.Vector v' a)
         => Vector v i a -> Vector v' i a
 convert (Vector l u v) = Vector l u (VG.convert v)
-{-# INLINEABLE convert #-}
+{-# INLINE convert #-}
