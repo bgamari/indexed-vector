@@ -183,7 +183,7 @@ accum' b@(l,u) f x0 xs = Vector l u $ VG.create $ do
         VGM.unsafeWrite v i' $! f a b
 
     !n = rangeSize (l,u)
-{-# INLINEABLE accum' #-}
+{-# INLINE accum' #-}
 
 -- | /O(n)/. Generate a 'Vector' from a set of bounds and a list of elements.
 -- Expects the list to be of length @'rangeSize' bounds@. Fails with error
