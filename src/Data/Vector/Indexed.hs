@@ -37,6 +37,7 @@ module Data.Vector.Indexed
       -- | These all require that the bounds of all arguments are identical.
       -- ** Without indexes
     , zipWith
+    , zipManyWith
       -- ** With indexes
     , izipWith
       -- * Conversion
@@ -247,6 +248,23 @@ sameBounds (x:xs)
   | all (== x) xs = Just x
 sameBounds _ = Nothing
 {-# INLINE sameBounds #-}
+
+-- | Zip together many 'Vector's with a function.
+zipManyWith :: (Eq i, VG.Vector v a)
+            => (a -> a -> a)
+            -> [Vector v i a]
+            -> Vector v i a
+zipManyWith f [] = error "zipManyWith: empty list"
+zipManyWith f (v0:vs) = Vector l u $ VG.create $ do
+    accum <- VG.thaw $ vector v0
+    let g i y = do
+            x0 <- VGM.read accum i
+            VGM.write accum i (f x0 y)
+    Foldable.mapM_ (\(Vector _ _ v) -> VG.imapM_ g v) vs
+    return accum
+  where
+    Just (l,u) = sameBounds $ fmap bounds (v0:vs)
+{-# INLINEABLE zipManyWith #-}
 
 -- | Zip together two 'Vector's with a function.
 zipWith :: (Eq i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
