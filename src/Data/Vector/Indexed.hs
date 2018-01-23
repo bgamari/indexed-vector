@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Data.Vector.Indexed
     ( Vector
@@ -45,14 +46,22 @@ module Data.Vector.Indexed
       -- * Linear algebra
     , quadrance
     , norm
+      -- * Mutable vectors
+    , freeze
+    , unsafeFreeze
+    , thaw
+    , unsafeThaw
+    , create
     ) where
 
 import Control.Monad.Primitive
+import Control.Monad.ST
 import Data.Bifunctor
 import qualified Data.Foldable as Foldable
 import Data.Ix as Ix
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
+import qualified Data.Vector.Indexed.Mutable as VIM
 import qualified Data.Vector.Fusion.Bundle as B
 import Prelude hiding (map, mapM, mapM_, replicate, sum, zipWith)
 
@@ -279,9 +288,9 @@ zipWith f v1 v2 =
 
 -- | Zip together two 'Vector's with a function and indexes.
 izipWith :: (Ix i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
-        => (i -> a -> b -> c)
-        -> Vector v i a -> Vector v i b
-        -> Vector v i c
+         => (i -> a -> b -> c)
+         -> Vector v i a -> Vector v i b
+         -> Vector v i c
 izipWith f v1 v2 =
     Vector l u $ VG.unstream $ B.zipWith3 f (indexStream v1) (VG.stream $ vector v1) (VG.stream $ vector v2)
   where
@@ -293,3 +302,43 @@ convert :: (VG.Vector v a, VG.Vector v' a)
         => Vector v i a -> Vector v' i a
 convert (Vector l u v) = Vector l u (VG.convert v)
 {-# INLINE convert #-}
+
+-- | /O(n)/ Yield a mutable copy of the immutable vector.
+thaw :: (PrimMonad m, VG.Vector v a)
+     => Vector v i a
+     -> m (VIM.MVector (VG.Mutable v) (PrimState m) i a)
+thaw (Vector l u v) = do
+    v' <- VG.thaw v
+    return $ VIM.MVector l u v'
+
+-- | /O(1)/ Unsafely convert an immutable vector to a mutable one without copying.
+-- The immutable vector may not be used after this operation.
+unsafeThaw :: (PrimMonad m, VG.Vector v a)
+           => Vector v i a
+           -> m (VIM.MVector (VG.Mutable v) (PrimState m) i a)
+unsafeThaw (Vector l u v) = do
+    v' <- VG.unsafeThaw v
+    return $ VIM.MVector l u v'
+
+-- | /O(1)/ Unsafe convert a mutable vector to an immutable one without copying.
+-- The mutable vector may not be used after this operation.
+freeze :: (PrimMonad m, VG.Vector v a)
+       => VIM.MVector (VG.Mutable v) (PrimState m) i a
+       -> m (Vector v i a)
+freeze (VIM.MVector l u v) = do
+    v' <- VG.freeze v
+    return $ Vector l u v'
+
+-- | /O(n)/ Yield an immutable copy of the mutable vector.
+unsafeFreeze :: (PrimMonad m, VG.Vector v a)
+             => VIM.MVector (VG.Mutable v) (PrimState m) i a
+             -> m (Vector v i a)
+unsafeFreeze (VIM.MVector l u v) = do
+    v' <- VG.unsafeFreeze v
+    return $ Vector l u v'
+
+-- | Execute the monadic action and freeze the resulting vector.
+create :: (VG.Vector v a)
+       => (forall s. ST s (VIM.MVector (VG.Mutable v) s i a))
+       -> Vector v i a
+create f = runST (f >>= unsafeFreeze)
