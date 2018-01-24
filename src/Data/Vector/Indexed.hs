@@ -54,6 +54,7 @@ module Data.Vector.Indexed
     , create
     ) where
 
+import Control.DeepSeq
 import Control.Monad.Primitive
 import Control.Monad.ST
 import Data.Bifunctor
@@ -73,6 +74,9 @@ data Vector v i a = Vector { lower  :: !i
                            , vector :: !(v a)
                            }
                   deriving (Ord, Eq, Functor, Foldable, Traversable)
+
+instance NFData (v a) => NFData (Vector v i a) where
+    rnf (Vector _ _ v) = rnf v
 
 instance (Show i, Show (v a)) => Show (Vector v i a) where
     showsPrec _ (Vector l u v) =
