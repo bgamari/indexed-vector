@@ -7,6 +7,7 @@ module Data.Vector.Indexed.Mutable
     ( MVector(..)
       -- * Creation
     , new
+    , replicate
       -- * Accessors
     , length
       -- * Modification
@@ -19,7 +20,7 @@ import Data.Ix as Ix
 import Control.Monad.Primitive
 import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Mutable as VGM
-import Prelude hiding (read)
+import Prelude hiding (read, replicate)
 
 data MVector v s i a = MVector { lower :: !i
                                , upper :: !i
