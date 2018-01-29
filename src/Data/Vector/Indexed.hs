@@ -251,7 +251,7 @@ quadrance = sum . map squared
   where squared x = x*x
 {-# INLINE quadrance #-}
 
--- | \(O(n)\). Compute the \(L^2\) norm, \( \sqrt (\sum_i i^2) \).
+-- | \(O(n)\). Compute the \(L^2\) norm, \( \sqrt{\sum_i i^2} \).
 norm :: (RealFloat a, VG.Vector v a) => Vector v i a -> a
 norm = sqrt . quadrance
 {-# INLINE norm #-}
