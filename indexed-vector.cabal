@@ -1,7 +1,9 @@
 name:                indexed-vector
 version:             0.1.0.0
 synopsis:            Vectors keyed by arbitrary key types.
--- description:         
+description:
+  This library provides a fusion-capable, indexed dense array type
+  build atop the @vector@ library and the 'Data.Ix.Ix' typeclass.
 homepage:            http://github.com/bgamari/indexed-vector
 license:             BSD3
 license-file:        LICENSE
