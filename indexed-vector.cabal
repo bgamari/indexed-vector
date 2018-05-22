@@ -1,7 +1,9 @@
 name:                indexed-vector
 version:             0.1.0.0
 synopsis:            Vectors keyed by arbitrary key types.
--- description:         
+description:
+  This library provides a fusion-capable, indexed dense array type
+  build atop the @vector@ library and the 'Data.Ix.Ix' typeclass.
 homepage:            http://github.com/bgamari/indexed-vector
 license:             BSD3
 license-file:        LICENSE
@@ -14,10 +16,12 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Data.Vector.Indexed
+  exposed-modules:     Data.Vector.Indexed,
+                       Data.Vector.Indexed.Mutable
   other-extensions:    FlexibleContexts, DeriveTraversable, DeriveFoldable
   build-depends:       base >=4.9 && <4.12,
                        primitive >=0.6 && <0.7,
+                       deepseq >= 1.4 && < 1.5,
                        vector >=0.12 && <0.13
   hs-source-dirs:      src
   default-language:    Haskell2010
