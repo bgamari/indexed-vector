@@ -11,8 +11,6 @@ module Data.Vector.Indexed
     , fromList
     , fromVector
     , singleton
-    , accum
-    , accum'
     , replicate
     , indexes
     , generate, generateM
@@ -34,6 +32,10 @@ module Data.Vector.Indexed
     , sum
       -- * Scans
     , prescanl'
+      -- * Updates and accumulation
+    , (//)
+    , accum
+    , accum'
       -- * Zipping
       -- | These all require that the bounds of all arguments are identical.
       -- ** Without indexes
@@ -146,7 +148,6 @@ foldl' :: (VG.Vector v b) => (a -> b -> a) -> a -> Vector v i b -> a
 foldl' f z = VG.foldl' f z . vector
 {-# INLINE foldl' #-}
 
--- | 
 prescanl' :: (VG.Vector v a, VG.Vector v b)
           => (a -> b -> a) -> a -> Vector v i b -> Vector v i a
 prescanl' f z v = Vector (lower v) (upper v) $ VG.prescanl' f z (vector v)
@@ -176,6 +177,12 @@ fromVector (l,u) v
   | otherwise          = error $ "Data.Vector.Indexed.fromList: Expected length "
                                  ++ show len++", found length "++show (VG.length v)
   where len = rangeSize (l,u)
+
+-- | \(O(m+n)\). For each pair @(i,a)@ from the list, replace the vector element
+-- at position @i@ by @a@.
+(//) :: (Ix i, VG.Vector v a)
+     => Vector v i a -> [(i, a)] -> Vector v i a
+v // xs = accum (const id) v xs
 
 -- | \(O(n)\). Accumulate elements from a list into a 'Vector'.
 accum :: (Ix i, VG.Vector v a) => (a -> b -> a) -> Vector v i a -> [(i, b)] -> Vector v i a
