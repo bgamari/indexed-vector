@@ -60,6 +60,7 @@ import Control.DeepSeq
 import Control.Monad.Primitive
 import Control.Monad.ST
 import Data.Bifunctor
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Foldable as Foldable
 import Data.Ix as Ix
 import qualified Data.Vector.Generic as VG
@@ -272,10 +273,9 @@ sameBounds _ = Nothing
 -- | Zip together many 'Vector's with a function.
 zipManyWith :: (Eq i, VG.Vector v a)
             => (a -> a -> a)
-            -> [Vector v i a]
+            -> NE.NonEmpty (Vector v i a)
             -> Vector v i a
-zipManyWith f [] = error "zipManyWith: empty list"
-zipManyWith f (v0:vs) = Vector l u $ VG.create $ do
+zipManyWith f (v0 NE.:| vs) = Vector l u $ VG.create $ do
     accum <- VG.thaw $ vector v0
     let g i y = do
             x0 <- VGM.unsafeRead accum i
