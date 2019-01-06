@@ -175,7 +175,7 @@ replicate (l, u) x = Vector l u (VG.replicate (rangeSize (l,u)) x)
 fromVector :: (Ix i, VG.Vector v a) => (i, i) -> v a -> Vector v i a
 fromVector (l,u) v
   | VG.length v == len = Vector l u v
-  | otherwise          = error $ "Data.Vector.Indexed.fromList: Expected length "
+  | otherwise          = error $ "Data.Vector.Indexed.fromVector: Expected length "
                                  ++ show len++", found length "++show (VG.length v)
   where len = rangeSize (l,u)
 
