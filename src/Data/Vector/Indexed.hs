@@ -56,6 +56,7 @@ module Data.Vector.Indexed
     , create
     ) where
 
+import Control.Exception
 import Control.DeepSeq
 import Control.Monad.Primitive
 import Control.Monad.ST
@@ -208,10 +209,11 @@ accum' b@(l,u) f x0 xs = Vector l u $ VG.create $ do
 {-# INLINE accum' #-}
 
 -- | \(O(n)\). Generate a 'Vector' from a set of bounds and a list of elements.
--- Expects the list to be of length @'rangeSize' bounds@. Fails with error
+-- Expects the list to be of length @'rangeSize' bounds@. May fail with error
 -- otherwise.
 fromList :: (Ix i, VG.Vector v a) => (i, i) -> [a] -> Vector v i a
-fromList bs = fromVector bs . VG.fromListN len
+fromList bs xs =
+    assert (length xs == len) $ fromVector bs $ VG.fromListN len xs
   where len = rangeSize bs
 {-# INLINE fromList #-}
 
