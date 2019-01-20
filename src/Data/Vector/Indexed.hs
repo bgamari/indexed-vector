@@ -48,6 +48,7 @@ module Data.Vector.Indexed
       -- * Linear algebra
     , quadrance
     , norm
+    , dot
       -- * Mutable vectors
     , freeze
     , unsafeFreeze
@@ -261,6 +262,11 @@ assocs v = zip (range $ bounds v) (VG.toList $ vector v)
 elems :: VG.Vector v a => Vector v i a -> [a]
 elems = VG.toList . vector
 {-# INLINE elems #-}
+
+-- | \(O(n)\). Inner product.
+dot :: (Eq i, Num a, VG.Vector v a) => Vector v i a -> Vector v i a -> a
+dot v1 v2 = withSameBounds [bounds v1, bounds v2] $ const $
+    VG.sum $ VG.zipWith (*) (vector v1) (vector v2)
 
 -- | \(O(n)\). Compute \( \sum_i i^2 \).
 quadrance :: (Num a, VG.Vector v a) => Vector v i a -> a
