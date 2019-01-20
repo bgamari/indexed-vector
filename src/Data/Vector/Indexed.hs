@@ -148,7 +148,14 @@ imapM_ f v =
 -- | \(O(n)\). Strictly fold over the given 'Vector'.
 foldl' :: (VG.Vector v b) => (a -> b -> a) -> a -> Vector v i b -> a
 foldl' f z = VG.foldl' f z . vector
-{-# INLINE foldl' #-}
+{-# INLINE [1] foldl' #-}
+
+-- This is a fairly important case (e.g. for the dot product) which ends up
+-- breaking due to the bounds checking performed by zipWith.
+{-# RULES "foldl' f z (zipWith g v1 v2)"
+      forall f z g v1 v2. foldl' f z (zipWith g v1 v2)
+        = withSameBounds [bounds v1, bounds v2] (const $ VG.foldl' f z $ VG.zipWith g (vector v1) (vector v2))
+    #-}
 
 prescanl' :: (VG.Vector v a, VG.Vector v b)
           => (a -> b -> a) -> a -> Vector v i b -> Vector v i a
@@ -157,7 +164,7 @@ prescanl' f z v = Vector (lower v) (upper v) $ VG.prescanl' f z (vector v)
 
 -- | \(O(n)\). Strictly Compute the sum of the elements of a 'Vector'.
 sum :: (Num b, VG.Vector v b) => Vector v i b -> b
-sum = VG.foldl' (+) 0 . vector
+sum = foldl' (+) 0
 {-# INLINE sum #-}
 
 -- | \(O(1)\). Construct a singleton 'Vector' covering the given index with the given value.
