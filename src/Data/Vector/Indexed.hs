@@ -108,7 +108,7 @@ v !? i = vector v VG.!? Ix.index (bounds v) i
 
 -- | \(O(n)\). Map over each element of a 'Vector'.
 map :: (VG.Vector v a, VG.Vector v b) => (a -> b) -> Vector v i a -> Vector v i b
-map f (Vector l u v) = Vector l u (VG.map f v)
+map f v = Vector (lower v) (upper v) (VG.map f $ vector v)
 {-# INLINE map #-}
 
 -- | \(O(n)\). Map over each element of a 'Vector' and its index.
@@ -120,7 +120,7 @@ imap f v =
 -- | \(O(n)\). Monadically map over each element of a 'Vector'.
 mapM :: (VG.Vector v a, VG.Vector v b, Monad m)
      => (a -> m b) -> Vector v i a -> m (Vector v i b)
-mapM f (Vector l u v) = Vector l u <$> VG.mapM f v
+mapM f v = Vector (lower v) (upper v) <$> VG.mapM f (vector v)
 {-# INLINE mapM #-}
 
 -- | \(O(n)\). Monadically map over each element of a 'Vector', discarding the result.
@@ -263,8 +263,11 @@ elems = VG.toList . vector
 {-# INLINE elems #-}
 
 -- | \(O(n)\). Compute \( \sum_i i^2 \).
-quadrance :: (RealFrac a, VG.Vector v a) => Vector v i a -> a
-quadrance = sum . map squared
+quadrance :: (Num a, VG.Vector v a) => Vector v i a -> a
+-- Ideally we would write this in terms of map and sum but I have had trouble
+-- getting this to fuse:
+--   quadrance = sum . map squared
+quadrance = VG.sum . VG.map squared . vector
   where squared x = x*x
 {-# INLINE quadrance #-}
 
@@ -372,4 +375,3 @@ create :: (VG.Vector v a)
        => (forall s. ST s (VIM.MVector (VG.Mutable v) s i a))
        -> Vector v i a
 create f = runST (f >>= unsafeFreeze)
- 
