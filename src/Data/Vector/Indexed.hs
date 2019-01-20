@@ -195,7 +195,7 @@ accum f (Vector l u v) = Vector l u . VG.accum f v . fmap (first $ Ix.index b)
 -- | \(O(n)\). Accumulate elements from a list into a 'Vector' initialized to the given value.
 accum' :: (Ix i, VG.Vector v a)
        => (i, i) -> (a -> b -> a) -> a -> [(i, b)] -> Vector v i a
-accum' b@(l,u) f x0 xs = Vector l u $ VG.create $ do
+accum' (l,u) f x0 xs = Vector l u $ VG.create $ do
     v <- VGM.replicate n x0
     Foldable.mapM_ (upd v) xs
     return v
@@ -272,20 +272,31 @@ sameBounds (x:xs)
 sameBounds _ = Nothing
 {-# INLINE sameBounds #-}
 
+data IncompatibleBounds = IncompatibleBounds
+                        deriving (Show)
+instance Exception IncompatibleBounds
+
+withSameBounds :: Eq i => [(i,i)] -> ((i,i) -> a) -> a
+withSameBounds bnds cont =
+    case sameBounds bnds of
+      Just (l,u) -> cont (l,u)
+      Nothing -> throw IncompatibleBounds
+{-# NOINLINE withSameBounds #-}
+
 -- | Zip together many 'Vector's with a function.
 zipManyWith :: (Eq i, VG.Vector v a)
             => (a -> a -> a)
             -> NE.NonEmpty (Vector v i a)
             -> Vector v i a
-zipManyWith f (v0 NE.:| vs) = Vector l u $ VG.create $ do
-    accum <- VG.thaw $ vector v0
-    let g i y = do
-            x0 <- VGM.unsafeRead accum i
-            VGM.unsafeWrite accum i (f x0 y)
-    Foldable.mapM_ (\(Vector _ _ v) -> VG.imapM_ g v) vs
-    return accum
-  where
-    Just (l,u) = sameBounds $ fmap bounds (v0:vs)
+zipManyWith f allVs@(v0 NE.:| vs) =
+    withSameBounds (fmap bounds $ NE.toList allVs) $
+    \(l,u) -> Vector l u $ VG.create $ do
+        accum <- VG.thaw $ vector v0
+        let g i y = do
+                x0 <- VGM.unsafeRead accum i
+                VGM.unsafeWrite accum i (f x0 y)
+        Foldable.mapM_ (\(Vector _ _ v) -> VG.imapM_ g v) vs
+        return accum
 {-# INLINE zipManyWith #-}
 
 -- | \(O(n)\) Zip together two 'Vector's with a function.
@@ -294,10 +305,9 @@ zipWith :: (Eq i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
         -> Vector v i a -> Vector v i b
         -> Vector v i c
 zipWith f v1 v2 =
-    Vector l u $ VG.zipWith f (vector v1) (vector v2)
-  where
-    Just (l,u) = sameBounds [bounds v1, bounds v2]
-{-# INLINE zipWith #-}
+    withSameBounds [bounds v1, bounds v2] $
+    \(l,u) -> Vector l u $ VG.zipWith f (vector v1) (vector v2)
+{-# INLINE [1] zipWith #-}
 
 -- | \(O(n)\) Zip together two 'Vector's with a function and indexes.
 izipWith :: (Ix i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
@@ -305,9 +315,9 @@ izipWith :: (Ix i, VG.Vector v a, VG.Vector v b, VG.Vector v c)
          -> Vector v i a -> Vector v i b
          -> Vector v i c
 izipWith f v1 v2 =
-    Vector l u $ VG.unstream $ B.zipWith3 f (indexStream v1) (VG.stream $ vector v1) (VG.stream $ vector v2)
-  where
-    Just (l,u) = sameBounds [bounds v1, bounds v2]
+    withSameBounds [bounds v1, bounds v2]
+    $ \(l,u) -> Vector l u $ VG.unstream
+    $ B.zipWith3 f (indexStream v1) (VG.stream $ vector v1) (VG.stream $ vector v2)
 {-# INLINE izipWith #-}
 
 -- | Convert between vector types.
@@ -355,3 +365,4 @@ create :: (VG.Vector v a)
        => (forall s. ST s (VIM.MVector (VG.Mutable v) s i a))
        -> Vector v i a
 create f = runST (f >>= unsafeFreeze)
+ 
