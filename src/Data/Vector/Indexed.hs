@@ -307,12 +307,12 @@ zipManyWith :: (Eq i, VG.Vector v a)
 zipManyWith f allVs@(v0 NE.:| vs) =
     withSameBounds (fmap bounds $ NE.toList allVs) $
     \(l,u) -> Vector l u $ VG.create $ do
-        accum <- VG.thaw $ vector v0
+        acc <- VG.thaw $ vector v0
         let g i y = do
-                x0 <- VGM.unsafeRead accum i
-                VGM.unsafeWrite accum i (f x0 y)
+                x0 <- VGM.unsafeRead acc i
+                VGM.unsafeWrite acc i (f x0 y)
         Foldable.mapM_ (\(Vector _ _ v) -> VG.imapM_ g v) vs
-        return accum
+        return acc
 {-# INLINE zipManyWith #-}
 
 -- | \(O(n)\) Zip together two 'Vector's with a function.
